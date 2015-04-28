@@ -1,0 +1,14 @@
+{
+  "clientId": "",
+  "clientSecret": "",
+  "accessToken": "",
+  "refreshToken": "",
+  "testflight": false,
+
+  "messages": [
+    "have a wonderful day",
+    "you rock",
+    "I believe in you",
+    "Your day may be pleasant"
+  ]
+}
