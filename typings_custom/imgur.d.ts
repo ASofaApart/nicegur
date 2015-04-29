@@ -7,6 +7,7 @@ interface IKeys {
     clientSecret : string;
 	accessToken : string;
 	refreshToken : string;
+	expires : number;
 }
 
 interface ImgurApiResponse<T> {
@@ -62,4 +63,14 @@ interface ImgurComment {
 	deleted : boolean;
 	vote : any;
 	children : ImgurComment[]
+}
+
+interface ImgurTokenReply {
+	access_token : string;
+	refresh_token : string;
+	expires_in : number;
+	token_type : string;
+	scope : any;
+	account_id : number;
+	account_username : number;
 }

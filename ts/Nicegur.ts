@@ -5,8 +5,18 @@ var Promise : any = prms.Promise;
 class Nicegur {
 
 	imgur : Imgur = null;
+	settings : INicegurSettings = null;
 
 	constructor(settings : INicegurSettings) {
+		if(!settings.clientId || !settings.clientSecret){
+			global.log.error("clientId or clientSecret missing, please create a settings.json file with those values");
+			throw "clientId or clientSecret missing";
+		}
+		if(!settings.expires){
+			global.log.info("expires not set, set to 0");
+			settings.expires = 0;
+		}
+		this.settings = settings;
 		this.imgur = new Imgur(settings, settings.testflight);
 	}
 
@@ -80,6 +90,27 @@ class Nicegur {
 				resolve(resp.data[rand]);
 			});
 		});
+	}
+
+
+	public authorize() : Promise<IKeys> {
+		global.log.debug("Nicegur.authorize");
+		if(this.settings.accessToken && this.settings.refreshToken){
+			// we assume the tokens were not revoked
+			if(Date.now() > this.settings.expires){
+				global.log.info("Nicegur.authorize", "already authorized, but expired, refreshing");
+				return this.imgur.refreshTokens();
+			} else {
+				global.log.info("Nicegur.authorize", "already authorized, doing nothing");
+				return new Promise((resolve : Function) => {
+					resolve(this.settings);
+				})
+			}
+		} else {
+			global.log.info("Nicegur.authorize", "not authorized, registering");
+			return this.imgur.registerUser();
+		}
+
 	}
 
 }

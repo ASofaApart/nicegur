@@ -2,6 +2,8 @@
 
 import prms = require("es6-promise");
 import request = require("request");
+import readline = require("readline");
+import url = require("url");
 
 var Promise : any = prms.Promise;
 
@@ -31,7 +33,7 @@ class Imgur {
 				if (!err && resp.statusCode === 200) {
 					resolve(JSON.parse(body));
 				} else {
-					global.log.error("Imgur.ApiCall", err);
+					global.log.error("Imgur.ApiCall", err, body);
 					reject(err);
 				}
 			});
@@ -54,6 +56,62 @@ class Imgur {
 		global.log.debug("imgur.getCommentsOfImage");
 		var url : string = "https://api.imgur.com/3/gallery/"+imgid+"/comments/";
 		return this.ApiCall(url);
+	}
+
+	public refreshTokens() : Promise<IKeys> {
+		return new Promise((resolve : Function, reject : Function) => {
+			global.log.debug("Imgur.refreshTokens");
+			request.post({
+				url: "https://api.imgur.com/oauth2/token",
+				form: {
+					client_id: this.keys.clientId,
+					client_secret: this.keys.clientSecret,
+					refresh_token: this.keys.refreshToken,
+					grant_type: "refresh_token"
+				},
+			}, (err, resp, body) => {
+				console.log(err);
+				//console.log(resp);
+				console.log(body);
+				if(!err && resp.statusCode === 200){
+					var data : ImgurTokenReply = JSON.parse(body);
+					this.keys.accessToken = data.access_token;
+					this.keys.refreshToken = data.refresh_token;
+					this.keys.expires = Date.now() + data.expires_in * 1000;
+					global.log.debug("Imgur.refreshTokens", "success");
+					resolve(this.keys);
+				} else {
+					global.log.error("Imgur.refreshTokens", err, body);
+				}
+			})
+		});
+	}
+
+	public registerUser() : Promise<IKeys> {
+		return new Promise((resolve : Function, reject : Function) => {
+
+			global.log.debug("Imgur.registerUser");
+
+			var rl : readline.ReadLine = readline.createInterface({
+				input: process.stdin,
+				output: process.stdout
+			});
+
+			console.log("open the following URL in your browser and grant access");
+			console.log("https://api.imgur.com/oauth2/authorize?response_type=token&client_id=" + this.keys.clientId);
+			console.log("When you're done, paste the URL you are redirected to here");
+
+			rl.question("When you're done, paste the URL you are redirected to here", (urlstring : string) => {
+				urlstring = urlstring.replace("#","?"); //this is done, so that the url parser has an easier time
+				var urlobj : url.Url = url.parse(urlstring, true);
+
+				this.keys.accessToken = urlobj.query.access_token;
+				this.keys.refreshToken = urlobj.query.refresh_token;
+				this.keys.expires = Date.now() + parseInt(urlobj.query.expires_in) * 1000;
+
+				resolve(this.keys);
+			});
+		});
 	}
 
 	/**
